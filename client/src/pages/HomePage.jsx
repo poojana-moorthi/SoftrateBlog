@@ -8,14 +8,14 @@ import TrendsInsights from '../components/TrendsInsights';
 import GeneralUpdates from '../components/GeneralUpdates';
 import ProductUpdates from '../components/ProductUpdates';
 import { INITIAL_ARTICLES, CATEGORIES, getStoredArticles } from '../data/blogData';
+import { apiUrl } from '../api';
 
 export default function HomePage() {
   const [articles, setArticles] = useState(() => getStoredArticles());
   const [categories, setCategories] = useState(CATEGORIES);
 
   useEffect(() => {
-    // Attempt to fetch fresh articles from the Express backend API
-    fetch('/api/articles')
+    fetch(apiUrl('/api/articles'))
       .then((res) => {
         if (!res.ok) throw new Error('API not available');
         return res.json();

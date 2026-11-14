@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import ArticleCard from '../components/ArticleCard';
 import { INITIAL_ARTICLES } from '../data/blogData';
+import { apiUrl } from '../api';
 
 export default function BlogDetailPage() {
   const { slug } = useParams();
@@ -12,7 +13,7 @@ export default function BlogDetailPage() {
 
   // Load articles from backend if available
   useEffect(() => {
-    fetch('/api/articles')
+    fetch(apiUrl('/api/articles'))
       .then((res) => {
         if (!res.ok) throw new Error('API offline');
         return res.json();

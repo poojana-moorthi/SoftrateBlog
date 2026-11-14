@@ -2,61 +2,69 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import articleRoutes from './routes/articleRoutes.js';
 
 dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/softrate_blog';
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// CORS — allow Vercel frontend + localhost dev
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.ALLOWED_ORIGIN, // set this to your Vercel URL in Render dashboard
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+        return callback(null, true);
+      }
+      callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  })
+);
+
+app.use(express.json({ limit: '10mb' })); // Allow larger payloads for base64 images
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // API Routes
 app.use('/api', articleRoutes);
 
-// Health check endpoint
+// Health check
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    dbConnected: mongoose.connection.readyState === 1
+    dbConnected: mongoose.connection.readyState === 1,
   });
 });
 
-// Serve React frontend build (for production on Railway)
-const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');
-app.use(express.static(clientBuildPath));
-
-// All non-API routes → serve React app (client-side routing)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(clientBuildPath, 'index.html'));
+// Root
+app.get('/', (req, res) => {
+  res.json({ message: 'Softrate Blog API is running.', endpoints: ['/api/articles', '/api/health'] });
 });
 
 // Connect to MongoDB
 mongoose
   .connect(MONGO_URI)
   .then(() => {
-    console.log(`[MongoDB] Connected successfully to: ${MONGO_URI}`);
+    console.log(`[MongoDB] Connected successfully`);
   })
   .catch((err) => {
-    console.warn(`[MongoDB Warning] Could not connect to local MongoDB (${err.message}).`);
-    console.warn(`[MongoDB Tip] The API is running in resilient in-memory mode so the frontend works immediately.`);
-    console.warn(`[MongoDB Tip] To connect to MongoDB, ensure mongod is running locally or provide a MONGO_URI in server/.env.`);
+    console.warn(`[MongoDB Warning] Could not connect: ${err.message}`);
+    console.warn(`[MongoDB Tip] Running in resilient in-memory mode.`);
   });
 
-// Start Express Server
+// Start server
 app.listen(PORT, () => {
   console.log(`====================================================`);
-  console.log(`🚀 Softrate Blog API Server listening on port ${PORT}`);
-  console.log(`🔗 REST API endpoints: http://localhost:${PORT}/api/articles`);
+  console.log(`Softrate Blog API listening on port ${PORT}`);
   console.log(`====================================================`);
 });
-

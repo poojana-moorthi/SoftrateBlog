@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import ArticleCard from '../components/ArticleCard';
 import { INITIAL_ARTICLES, CATEGORIES } from '../data/blogData';
+import { apiUrl } from '../api';
 
 export default function BlogListingPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -21,7 +22,7 @@ export default function BlogListingPage() {
 
   // Attempt to fetch articles from backend
   useEffect(() => {
-    fetch('/api/articles')
+    fetch(apiUrl('/api/articles'))
       .then((res) => {
         if (!res.ok) throw new Error('API offline');
         return res.json();

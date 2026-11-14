@@ -277,5 +277,57 @@ router.post('/admin/login', (req, res) => {
   res.status(401).json({ success: false, message: 'Invalid admin credentials' });
 });
 
+// --------------------------------------------------------------------------
+// 9. ADMIN: POST /api/upload (Image upload — stores as base64 in response)
+// --------------------------------------------------------------------------
+router.post('/upload', (req, res) => {
+  try {
+    const { imageData, fileName, mimeType } = req.body;
+    if (!imageData) {
+      return res.status(400).json({ success: false, message: 'No image data provided' });
+    }
+    // imageData is already base64 from the frontend FileReader
+    const dataUrl = imageData.startsWith('data:')
+      ? imageData
+      : `data:${mimeType || 'image/jpeg'};base64,${imageData}`;
+
+    res.json({ success: true, imageUrl: dataUrl, fileName });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Upload failed' });
+  }
+});
+
+// --------------------------------------------------------------------------
+// 10. ADMIN: GET /api/authors  (list stored authors)
+// --------------------------------------------------------------------------
+let memoryAuthors = [
+  { id: 'auth-1', name: 'Softrate Editorial Team', role: 'Enterprise Solutions Specialist', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80' },
+  { id: 'auth-2', name: 'Priya Sundaram', role: 'Cloud Infrastructure Lead', avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=150&q=80' },
+  { id: 'auth-3', name: 'Arjun Krishnamurthy', role: 'AI Research Engineer', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80' },
+];
+
+router.get('/authors', (req, res) => {
+  res.json({ success: true, authors: memoryAuthors });
+});
+
+router.post('/authors', (req, res) => {
+  const { name, role, avatar } = req.body;
+  if (!name) return res.status(400).json({ success: false, message: 'Name is required' });
+  const newAuthor = {
+    id: `auth-${Date.now()}`,
+    name,
+    role: role || 'Contributor',
+    avatar: avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+  };
+  memoryAuthors.push(newAuthor);
+  res.status(201).json({ success: true, author: newAuthor });
+});
+
+router.delete('/authors/:id', (req, res) => {
+  const { id } = req.params;
+  memoryAuthors = memoryAuthors.filter((a) => a.id !== id);
+  res.json({ success: true, message: 'Author removed' });
+});
+
 export default router;
 
